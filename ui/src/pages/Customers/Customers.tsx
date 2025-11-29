@@ -9,7 +9,7 @@ export const Customers = () => {
     const navigate = useNavigate();
 
     const handleCustomerClick = (customer: Customer) => {
-        navigate(`/customer/${customer.id}`);
+        navigate(`/customer/${customer.customer_id}`);
     };
 
     if (error) {

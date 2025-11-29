@@ -217,9 +217,9 @@ export const Dashboard = () => {
                                 <Box display="flex" flexDirection="column" gap={3} maxH="96" overflowY="auto">
                                     {customers.slice(0, 5).map((customer) => (
                                         <CustomerCard
-                                            key={customer.id}
+                                            key={customer.customer_id}
                                             customer={customer}
-                                            onClick={() => handleCustomerClick(customer.id)}
+                                            onClick={() => handleCustomerClick(customer.customer_id.toString())}
                                         />
                                     ))}
                                     {customers.length === 0 && (

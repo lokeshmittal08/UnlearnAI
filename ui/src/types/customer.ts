@@ -1,15 +1,17 @@
 export interface Customer {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  dateOfBirth: string;
-  address: Address;
-  accounts: Account[];
-  registrationDate: string;
-  status: CustomerStatus;
-  riskLevel: RiskLevel;
+  customer_id: number;
+  customer_name: string;
+  age: number;
+  income: number;
+  tenure_months: number;
+  travel_ratio: number;
+  online_ratio: number;
+  num_cards: number;
+  late_12m: number;
+  mobile_logins: number;
+  segment_label: number;
+  nbo_label: number;
+  score_label: number;
 }
 
 export interface Address {

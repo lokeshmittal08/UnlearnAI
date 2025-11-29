@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 import type { Customer } from '@/types';
-import { formatCurrency, getStatusColor } from '@/utils';
+import { formatCurrency } from '@/utils';
 import { Box, Flex, Text, Badge } from '@chakra-ui/react';
 
 interface CustomerCardProps {
@@ -9,22 +9,18 @@ interface CustomerCardProps {
 }
 
 export const CustomerCard: FC<CustomerCardProps> = ({ customer, onClick }) => {
-    const totalBalance = customer.accounts.reduce((sum, account) => sum + account.balance, 0);
-    const statusColor = getStatusColor(customer.status);
-    const riskColor = getStatusColor(customer.riskLevel);
+    const getScoreColor = (score: number) => {
+        if (score >= 8) return 'green';
+        if (score >= 6) return 'yellow';
+        return 'red';
+    };
 
-    const getBadgeColorScheme = (color: string) => {
-        switch (color) {
-            case 'green':
-                return 'green';
-            case 'yellow':
-                return 'yellow';
-            case 'red':
-                return 'red';
-            case 'blue':
-                return 'blue';
-            default:
-                return 'gray';
+    const getSegmentLabel = (segment: number) => {
+        switch (segment) {
+            case 0: return 'Low Value';
+            case 1: return 'Medium Value';
+            case 2: return 'High Value';
+            default: return 'Unknown';
         }
     };
 
@@ -53,32 +49,32 @@ export const CustomerCard: FC<CustomerCardProps> = ({ customer, onClick }) => {
                     fontWeight="bold"
                     fontSize="lg"
                 >
-                    {customer.firstName.charAt(0)}{customer.lastName.charAt(0)}
+                    {customer.customer_name.charAt(0).toUpperCase()}
                 </Box>
                 <Box flex={1}>
                     <Flex flexDirection="column" gap={1}>
                         <Text fontWeight="bold" fontSize="lg">
-                            {customer.firstName} {customer.lastName}
+                            {customer.customer_name}
                         </Text>
                         <Text color="fg.muted" fontSize="sm">
-                            {customer.email}
+                            Age: {customer.age} | Income: {formatCurrency(customer.income)}
                         </Text>
                         <Flex gap={2}>
-                            <Badge colorScheme={getBadgeColorScheme(statusColor)} size="sm">
-                                {customer.status}
+                            <Badge colorScheme={getScoreColor(customer.score_label)} size="sm">
+                                Score: {customer.score_label}/10
                             </Badge>
-                            <Badge colorScheme={getBadgeColorScheme(riskColor)} size="sm">
-                                {customer.riskLevel} risk
+                            <Badge colorScheme="blue" size="sm">
+                                {getSegmentLabel(customer.segment_label)}
                             </Badge>
                         </Flex>
                     </Flex>
                 </Box>
                 <Flex flexDirection="column" align="flex-end" gap={1}>
                     <Text fontWeight="bold" fontSize="lg" color="blue.600">
-                        {formatCurrency(totalBalance)}
+                        {customer.num_cards} cards
                     </Text>
                     <Text color="fg.muted" fontSize="sm">
-                        {customer.accounts.length} accounts
+                        {customer.tenure_months} months
                     </Text>
                 </Flex>
             </Flex>

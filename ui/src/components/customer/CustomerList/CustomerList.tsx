@@ -10,18 +10,14 @@ import {
     type ColumnDef,
 } from '@tanstack/react-table';
 import type { Customer } from '@/types';
-import { formatCurrency, getStatusColor } from '@/utils';
 import {
     Box,
     Table,
-    Badge,
     Button,
     Input,
     Flex,
     Text,
-    Avatar,
     HStack,
-    VStack,
 } from '@chakra-ui/react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 
@@ -38,91 +34,51 @@ export const CustomerList = ({ customers, onCustomerClick }: CustomerListProps) 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const columns = useMemo<ColumnDef<Customer, any>[]>(
         () => [
-            columnHelper.accessor('firstName', {
-                header: 'Customer',
-                cell: (info) => {
-                    const customer = info.row.original;
-                    return (
-                        <HStack>
-                            <Avatar.Root size="sm">
-                                <Avatar.Fallback>
-                                    {customer.firstName.charAt(0)}{customer.lastName.charAt(0)}
-                                </Avatar.Fallback>
-                            </Avatar.Root>
-                            <VStack align="start" gap={0}>
-                                <Text fontWeight="medium">
-                                    {customer.firstName} {customer.lastName}
-                                </Text>
-                                <Text fontSize="sm" color="fg.muted">
-                                    {customer.email}
-                                </Text>
-                            </VStack>
-                        </HStack>
-                    );
-                },
-            }),
-            columnHelper.accessor('status', {
-                header: 'Status',
-                cell: (info) => {
-                    const status = info.getValue();
-                    const color = getStatusColor(status);
-                    return (
-                        <Badge
-                            colorScheme={
-                                color === 'green' ? 'green' :
-                                    color === 'yellow' ? 'yellow' :
-                                        color === 'red' ? 'red' : 'gray'
-                            }
-                        >
-                            {status}
-                        </Badge>
-                    );
-                },
-            }),
-            columnHelper.accessor('riskLevel', {
-                header: 'Risk Level',
-                cell: (info) => {
-                    const risk = info.getValue();
-                    const color = getStatusColor(risk);
-                    return (
-                        <Badge
-                            colorScheme={
-                                color === 'green' ? 'green' :
-                                    color === 'yellow' ? 'yellow' :
-                                        color === 'red' ? 'red' : 'gray'
-                            }
-                        >
-                            {risk}
-                        </Badge>
-                    );
-                },
-            }),
-            columnHelper.accessor((row) => row.accounts.reduce((sum, acc) => sum + acc.balance, 0), {
-                id: 'totalBalance',
-                header: 'Total Balance',
+            columnHelper.accessor('customer_id', {
+                header: 'Customer ID',
                 cell: (info) => (
                     <Text fontWeight="medium" color="blue.600">
-                        {formatCurrency(info.getValue())}
+                        {info.getValue()}
                     </Text>
                 ),
             }),
-            columnHelper.accessor('accounts', {
-                header: 'Accounts',
+            columnHelper.accessor('customer_name', {
+                header: 'Customer Name',
                 cell: (info) => (
-                    <Text>{info.getValue().length}</Text>
+                    <Text fontWeight="medium">
+                        {info.getValue()}
+                    </Text>
                 ),
             }),
-            columnHelper.accessor('registrationDate', {
-                header: 'Registration Date',
+            columnHelper.accessor('age', {
+                header: 'Age',
                 cell: (info) => (
-                    <Text>{new Date(info.getValue()).toLocaleDateString()}</Text>
+                    <Text>{info.getValue()}</Text>
+                ),
+            }),
+            columnHelper.accessor('income', {
+                header: 'Income',
+                cell: (info) => (
+                    <Text fontWeight="medium">
+                        ${info.getValue().toLocaleString()}
+                    </Text>
+                ),
+            }),
+            columnHelper.accessor('tenure_months', {
+                header: 'Tenure (Months)',
+                cell: (info) => (
+                    <Text>{info.getValue()}</Text>
+                ),
+            }),
+            columnHelper.accessor('num_cards', {
+                header: 'Number of Cards',
+                cell: (info) => (
+                    <Text>{info.getValue()}</Text>
                 ),
             }),
         ],
         []
-    );
-
-    const table = useReactTable({
+    );    const table = useReactTable({
         data: customers,
         columns,
         getCoreRowModel: getCoreRowModel(),
