@@ -152,6 +152,15 @@ class CustomerService {
       };
     }
   }
+
+  async triggerUnlearn(customerId: string): Promise<void> {
+    try {
+      await apiService.triggerUnlearn(customerId);
+    } catch (error) {
+      console.error('Failed to trigger unlearn:', error);
+      throw error;
+    }
+  }
   // Clear cached customer data to force refresh from API
   clearCache(): void {
     this.customers = [];

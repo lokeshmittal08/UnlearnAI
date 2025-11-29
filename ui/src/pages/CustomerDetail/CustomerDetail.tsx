@@ -122,6 +122,7 @@ export const CustomerDetail = () => {
                     </Box>
                 </Flex>
                 <CustomerActionsMenu
+                    customerId={customer.customer_id.toString()}
                     onInvokeRightToForgotten={() => {
                         // Handle right to forgotten action
                         console.log('Right to forgotten invoked for customer:', customer.customer_id);

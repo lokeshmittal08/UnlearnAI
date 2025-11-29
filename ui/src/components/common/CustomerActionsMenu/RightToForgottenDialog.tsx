@@ -9,18 +9,15 @@ interface RightToForgottenDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onProceed: () => void;
+    loading?: boolean;
 }
 
 export const RightToForgottenDialog: FC<RightToForgottenDialogProps> = ({
     open,
     onOpenChange,
     onProceed,
+    loading = false,
 }) => {
-    const handleProceed = () => {
-        onProceed();
-        onOpenChange(false);
-    };
-
     return (
         <Dialog.Root
             open={open}
@@ -41,7 +38,8 @@ export const RightToForgottenDialog: FC<RightToForgottenDialogProps> = ({
                         <Button
                             colorPalette="red"
                             w="full"
-                            onClick={handleProceed}
+                            onClick={onProceed}
+                            loading={loading}
                         >
                             Proceed to remove data from Models
                         </Button>
@@ -49,6 +47,7 @@ export const RightToForgottenDialog: FC<RightToForgottenDialogProps> = ({
                             variant="ghost"
                             textDecoration="underline"
                             onClick={() => onOpenChange(false)}
+                            disabled={loading}
                         >
                             Cancel
                         </Button>

@@ -32,6 +32,10 @@ class ApiService {
       `/customers/${customerId}/transactions`
     );
   }
+
+  async triggerUnlearn(customerId: string): Promise<unknown> {
+    return httpClient.post('/unlearn_trigger', { customer_id: customerId });
+  }
 }
 
 export const apiService = new ApiService();

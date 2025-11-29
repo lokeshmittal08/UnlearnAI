@@ -10,8 +10,9 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader
 from dataclasses import dataclass
 from typing import List, Dict, Any
+import time
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -72,7 +73,7 @@ def load_customers_from_csv(csv_path: str):
         )
 
         rec = CustomerRecord(
-            customer_id=row["customer_id"],
+            customer_id=str(row["customer_id"]),
             customer_name=row["customer_name"],
             features=features,
             segment=int(row["segment_label"]),
@@ -82,8 +83,8 @@ def load_customers_from_csv(csv_path: str):
         )
 
         records.append(rec)
-        name_to_id[row["customer_name"]] = row["customer_id"]
-        id_to_record[row["customer_id"]] = rec
+        name_to_id[row["customer_name"]] = str(row["customer_id"])
+        id_to_record[str(row["customer_id"])] = rec
 
     return records, name_to_id, id_to_record
 
@@ -485,7 +486,7 @@ def get_customers():
 # ------------------------------------------------------------
 @app.post("/predict", response_model=PredictResponse)
 def predict(req: PredictRequest):
-    cid = req.customer_id
+    cid = str(req.customer_id)
 
     if cid not in ID_TO_RECORD:
         return PredictResponse(
@@ -538,13 +539,11 @@ def predict(req: PredictRequest):
 # ------------------------------------------------------------
 @app.post("/unlearn_trigger", response_model=UnlearnResponse)
 def unlearn_trigger(req: UnlearnRequest):
-    cid = req.customer_id
-
+    cid = str(req.customer_id)
     if cid not in ID_TO_RECORD:
-        return UnlearnResponse(
-            message=f"Customer {cid} not found",
-            retrained_shard=-1,
-        )
+        raise HTTPException(status_code=404, detail=f"Customer {cid} not found")
+
+    time.sleep(3)
 
     # Pre-metrics for this customer
     pre = compute_metrics(ENSEMBLE, ID_TO_RECORD[cid])
@@ -573,6 +572,7 @@ def unlearn_batch(req: UnlearnBatchRequest):
 
     # Separate valid / invalid IDs
     for cid in req.customer_ids:
+        cid = str(cid)
         if cid in ID_TO_RECORD:
             valid_ids.append(cid)
         else:
@@ -623,12 +623,8 @@ def metrics(customer_id: str):
     Get regulator-grade metrics + interpretation for a specific customer.
     Example: GET /metrics?customer_id=c2
     """
+    customer_id = str(customer_id)
     if customer_id not in METRICS_DB:
-        return MetricsResponse(
-            result={
-                "error": f"No metrics found for customer_id={customer_id}. "
-                         "Unlearn this customer first, then query metrics."
-            }
-        )
+        raise HTTPException(status_code=404, detail=f"No metrics found for customer_id={customer_id}. Unlearn this customer first.")
 
     return MetricsResponse(result=METRICS_DB[customer_id])
