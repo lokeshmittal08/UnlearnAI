@@ -4,21 +4,35 @@ import { apiService } from '@/lib/apiService';
 class CustomerService {
   private customers: Customer[] = [];
 
-  async getCustomers(
-    filters?: CustomerFilters,
-    search?: string
-  ): Promise<Customer[]> {
+  // Fetch all customers from API (used for initial load)
+  async fetchAllCustomers(): Promise<Customer[]> {
     try {
-      // Fetch all customers from API if not already cached
       if (this.customers.length === 0) {
         const customersData = await apiService.getCustomers();
-        // Ensure the response is an array
         if (Array.isArray(customersData)) {
           this.customers = customersData;
         } else {
           console.error('API returned invalid customer data:', customersData);
           this.customers = [];
         }
+      }
+      return this.customers;
+    } catch (error) {
+      console.error('Failed to fetch all customers:', error);
+      this.customers = [];
+      throw error;
+    }
+  }
+
+  // Get customers with filtering (used for displaying filtered results)
+  async getCustomers(
+    filters?: CustomerFilters,
+    search?: string
+  ): Promise<Customer[]> {
+    try {
+      // Ensure we have customer data
+      if (this.customers.length === 0) {
+        await this.fetchAllCustomers();
       }
 
       let filteredCustomers = [...this.customers];
@@ -70,13 +84,13 @@ class CustomerService {
     }
   }
 
-  async getCustomerById(id: string): Promise<Customer | null> {
-    try {
-      return await apiService.getCustomerById(id);
-    } catch (error) {
-      console.error('Failed to fetch customer:', error);
-      return null;
-    }
+  // Get a single customer by ID from cached data
+  getCustomerById(id: string): Customer | null {
+    return (
+      this.customers.find(
+        (customer) => customer.customer_id.toString() === id
+      ) || null
+    );
   }
 
   async getCustomerTransactions(customerId: string): Promise<Transaction[]> {

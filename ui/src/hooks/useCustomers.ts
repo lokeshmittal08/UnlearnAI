@@ -15,9 +15,12 @@ export const useCustomers = () => {
   } = useCustomerStore();
 
   useEffect(() => {
-    const fetchCustomers = async () => {
+    const fetchAllCustomers = async () => {
       try {
         setLoading(true);
+        // Fetch all customers once and cache them
+        await customerService.fetchAllCustomers();
+        // Then get filtered results
         const data = await customerService.getCustomers(filters, searchQuery);
         setCustomers(data);
       } catch (err) {
@@ -29,8 +32,27 @@ export const useCustomers = () => {
       }
     };
 
-    fetchCustomers();
-  }, [filters, searchQuery, setCustomers, setLoading, setError]);
+    fetchAllCustomers();
+  }, []); // Only run once on mount
+
+  // Effect to re-filter when filters or search change
+  useEffect(() => {
+    const applyFilters = async () => {
+      try {
+        const data = await customerService.getCustomers(filters, searchQuery);
+        setCustomers(data);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Failed to filter customers'
+        );
+      }
+    };
+
+    // Only apply filters if we have data loaded
+    if (!isLoading) {
+      applyFilters();
+    }
+  }, [filters, searchQuery, setCustomers, setError, isLoading]);
 
   return { customers, isLoading, error };
 };
