@@ -104,8 +104,14 @@ export const truncateText = (text: string, maxLength: number): string => {
 };
 
 /**
- * Get initials from name
+ * Get initials from full name (first and last name)
  */
-export const getInitials = (firstName: string, lastName: string): string => {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+export const getCustomerInitials = (name: string): string => {
+  const nameParts = name.trim().split(' ');
+  if (nameParts.length >= 2) {
+    return (
+      nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
+    ).toUpperCase();
+  }
+  return name.charAt(0).toUpperCase();
 };

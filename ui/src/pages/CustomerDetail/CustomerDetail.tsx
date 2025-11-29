@@ -16,6 +16,7 @@ import {
 import { ArrowLeft, CreditCard, Smartphone } from 'lucide-react';
 import { customerService } from '@/services';
 import { formatCurrency } from '@/utils';
+import { CustomerAvatar } from '@/components/common/CustomerAvatar';
 import type { Customer } from '@/types';
 
 export const CustomerDetail = () => {
@@ -130,20 +131,7 @@ export const CustomerDetail = () => {
                 mb={8}
             >
                 <Flex align="center" gap={6}>
-                    <Box
-                        w={20}
-                        h={20}
-                        bg="blue.500"
-                        borderRadius="full"
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="center"
-                        color="white"
-                        fontWeight="bold"
-                        fontSize="xl"
-                    >
-                        {customer.customer_name.charAt(0).toUpperCase()}
-                    </Box>
+                    <CustomerAvatar name={customer.customer_name} size="lg" />
                     <Box flex={1}>
                         <Heading size="xl" mb={2}>
                             {customer.customer_name}

@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 import type { Customer } from '@/types';
 import { formatCurrency } from '@/utils';
+import { CustomerAvatar } from '@/components/common/CustomerAvatar';
 import { Box, Flex, Text, Badge } from '@chakra-ui/react';
 
 interface CustomerCardProps {
@@ -37,20 +38,7 @@ export const CustomerCard: FC<CustomerCardProps> = ({ customer, onClick }) => {
             onClick={onClick}
         >
             <Flex align="center" gap={4}>
-                <Box
-                    w={12}
-                    h={12}
-                    bg="blue.100"
-                    borderRadius="full"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    color="blue.600"
-                    fontWeight="bold"
-                    fontSize="lg"
-                >
-                    {customer.customer_name.charAt(0).toUpperCase()}
-                </Box>
+                <CustomerAvatar name={customer.customer_name} size="sm" />
                 <Box flex={1}>
                     <Flex flexDirection="column" gap={1}>
                         <Text fontWeight="bold" fontSize="lg">
