@@ -19,9 +19,8 @@ class CustomerService {
     // Apply search filter
     if (search) {
       const searchLower = search.toLowerCase();
-      filteredCustomers = filteredCustomers.filter(
-        (customer) =>
-          customer.customer_name.toLowerCase().includes(searchLower)
+      filteredCustomers = filteredCustomers.filter((customer) =>
+        customer.customer_name.toLowerCase().includes(searchLower)
       );
     }
 
@@ -32,9 +31,9 @@ class CustomerService {
       if (filters.status !== 'all') {
         // Use segment_label as a proxy for status (0=inactive, 1=active, 2=premium)
         const statusMap: Record<string, number> = {
-          'active': 1,
-          'inactive': 0,
-          'suspended': 2
+          active: 1,
+          inactive: 0,
+          suspended: 2,
         };
         const segmentValue = statusMap[filters.status];
         if (segmentValue !== undefined) {
@@ -46,9 +45,9 @@ class CustomerService {
       if (filters.riskLevel !== 'all') {
         // Use score_label as a proxy for risk (lower score = higher risk)
         const riskMap: Record<string, [number, number]> = {
-          'low': [8, 10],
-          'medium': [5, 7],
-          'high': [0, 4]
+          low: [8, 10],
+          medium: [5, 7],
+          high: [0, 4],
         };
         const [minScore, maxScore] = riskMap[filters.riskLevel] || [0, 10];
         filteredCustomers = filteredCustomers.filter(
@@ -63,7 +62,11 @@ class CustomerService {
 
   async getCustomerById(id: string): Promise<Customer | null> {
     await new Promise((resolve) => setTimeout(resolve, 300));
-    return this.customers.find((customer) => customer.customer_id.toString() === id) || null;
+    return (
+      this.customers.find(
+        (customer) => customer.customer_id.toString() === id
+      ) || null
+    );
   }
 
   async getCustomerTransactions(customerId: string): Promise<Transaction[]> {

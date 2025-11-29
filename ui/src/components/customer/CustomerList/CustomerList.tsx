@@ -78,7 +78,7 @@ export const CustomerList = ({ customers, onCustomerClick }: CustomerListProps) 
             }),
         ],
         []
-    );    const table = useReactTable({
+    ); const table = useReactTable({
         data: customers,
         columns,
         getCoreRowModel: getCoreRowModel(),
