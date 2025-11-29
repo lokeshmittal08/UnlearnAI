@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import List, Dict, Any
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # =================================================================
@@ -457,6 +458,14 @@ class MetricsResponse(BaseModel):
 
 app = FastAPI(title="UnlearnAI – CSV + SISA Backend (Regulator Grade)")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -469,7 +478,7 @@ def get_customers():
     customers = []
     for rec in ALL_RECORDS:
         customers.append(rec.full_data)
-    return {"customers": customers}
+    return customers
 
 # ------------------------------------------------------------
 # 1️⃣ SMART PREDICT (AUTO PRE/POST)

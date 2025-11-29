@@ -17,6 +17,7 @@ A modern, responsive banking dashboard built with React, Vite, TypeScript, and C
 - **Frontend**: React 18 with TypeScript
 - **Build Tool**: Vite
 - **UI Library**: Chakra UI
+- **HTTP Client**: Custom fetch-based HTTP client
 - **State Management**: Zustand
 - **Routing**: React Router
 - **Styling**: Chakra UI's built-in styling system
@@ -32,7 +33,8 @@ bank-ui/
 │   │   ├── customer/       # Customer-specific components
 │   │   └── dashboard/      # Dashboard components
 │   ├── hooks/              # Custom React hooks
-│   ├── services/           # API services and data fetching
+│   ├── lib/                # HTTP client and API services
+│   ├── services/           # Business logic services
 │   ├── stores/             # Zustand stores
 │   ├── types/              # TypeScript type definitions
 │   ├── utils/              # Utility functions
@@ -40,6 +42,7 @@ bank-ui/
 │   ├── pages/              # Page components
 │   └── styles/             # Theme and global styles
 ├── public/                 # Static assets
+├── .env.example            # Environment variables template
 └── package.json            # Dependencies and scripts
 ```
 
@@ -65,13 +68,58 @@ cd bank-ui
 npm install
 ```
 
-3. Start the development server:
+3. Configure environment variables:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` to configure your API endpoint:
+
+```env
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+4. Start the development server:
 
 ```bash
 npm run dev
 ```
 
-4. Open your browser and navigate to `http://localhost:3000`
+5. Open your browser and navigate to `http://localhost:3000`
+
+### API Configuration
+
+The application uses a configurable HTTP client to communicate with the backend API. Configure the base URL using the `VITE_API_BASE_URL` environment variable.
+
+**Supported Endpoints:**
+
+- `GET /customers` - Fetch all customers with optional filters
+- `GET /customers/{id}` - Fetch a specific customer
+- `GET /customers/{id}/transactions` - Fetch customer transactions
+- `GET /customers/metrics` - Fetch customer metrics
+
+**Example API Response for Customers:**
+
+```json
+[
+  {
+    "customer_id": 10001,
+    "customer_name": "John Doe",
+    "age": 35,
+    "income": 75000,
+    "tenure_months": 24,
+    "travel_ratio": 0.3,
+    "online_ratio": 0.8,
+    "num_cards": 2,
+    "late_12m": 0,
+    "mobile_logins": 45,
+    "segment_label": 1,
+    "nbo_label": 0,
+    "score_label": 8.5
+  }
+]
+```
 
 ### Available Scripts
 
