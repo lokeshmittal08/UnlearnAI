@@ -17,6 +17,7 @@ import { ArrowLeft, CreditCard, Smartphone } from 'lucide-react';
 import { customerService } from '@/services';
 import { formatCurrency } from '@/utils';
 import { CustomerAvatar } from '@/components/common/CustomerAvatar';
+import { CustomerActionsMenu } from '@/components/common/CustomerActionsMenu';
 import type { Customer } from '@/types';
 
 export const CustomerDetail = () => {
@@ -102,22 +103,31 @@ export const CustomerDetail = () => {
     return (
         <Container maxW="7xl" py={8}>
             {/* Header */}
-            <Flex align="center" mb={8}>
-                <IconButton
-                    aria-label="Back to customers"
-                    onClick={() => navigate('/customers')}
-                    mr={4}
-                >
-                    <ArrowLeft />
-                </IconButton>
-                <Box>
-                    <Heading size="lg" mb={2}>
-                        Customer Details
-                    </Heading>
-                    <Text color="gray.600">
-                        Customer ID: {customer.customer_id}
-                    </Text>
-                </Box>
+            <Flex align="center" justify="space-between" mb={8}>
+                <Flex align="center">
+                    <IconButton
+                        aria-label="Back to customers"
+                        onClick={() => navigate('/customers')}
+                        mr={4}
+                    >
+                        <ArrowLeft />
+                    </IconButton>
+                    <Box>
+                        <Heading size="lg" mb={2}>
+                            Customer Details
+                        </Heading>
+                        <Text color="gray.600">
+                            Customer ID: {customer.customer_id}
+                        </Text>
+                    </Box>
+                </Flex>
+                <CustomerActionsMenu
+                    onInvokeRightToForgotten={() => {
+                        // Handle right to forgotten action
+                        console.log('Right to forgotten invoked for customer:', customer.customer_id);
+                        // You could show a toast, modal, or navigate somewhere
+                    }}
+                />
             </Flex>
 
             {/* Customer Header Card */}
