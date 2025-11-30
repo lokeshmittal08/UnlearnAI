@@ -18,6 +18,8 @@ import { customerService } from '@/services';
 import { formatCurrency } from '@/utils';
 import { CustomerAvatar } from '@/components/common/CustomerAvatar';
 import { CustomerActionsMenu } from '@/components/common/CustomerActionsMenu';
+import { RiskScoreGauge } from '@/components/common/RiskScoreGauge';
+import { AIPromo } from '@/components/customer/AIPromo';
 import type { Customer } from '@/types';
 
 export const CustomerDetail = () => {
@@ -65,12 +67,6 @@ export const CustomerDetail = () => {
             case 2: return 'High Value';
             default: return 'Unknown';
         }
-    };
-
-    const getScoreColor = (score: number): string => {
-        if (score >= 8) return 'green';
-        if (score >= 6) return 'yellow';
-        return 'red';
     };
 
     if (isLoading) {
@@ -236,6 +232,9 @@ export const CustomerDetail = () => {
                 </Box>
             </Grid>
 
+
+            {/* AI Promotional Card Recommendation */}
+            <AIPromo customerId={customer.customer_id.toString()} />
             {/* Behavioral Analysis */}
             <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap={6} mb={8}>
                 <Box
@@ -321,24 +320,11 @@ export const CustomerDetail = () => {
                 >
                     <Heading size="md" mb={4}>Risk Assessment</Heading>
                     <VStack gap={4} align="stretch">
-                        <Box>
-                            <Flex justify="space-between" mb={2}>
-                                <Text>Risk Score</Text>
-                                <Badge colorScheme={getScoreColor(customer.score_label)}>
-                                    {customer.score_label}/10
-                                </Badge>
-                            </Flex>
-                            <Box bg="gray.200" borderRadius="full" h={4}>
-                                <Box
-                                    bg={getScoreColor(customer.score_label) === 'green' ? 'green.500' : getScoreColor(customer.score_label) === 'yellow' ? 'yellow.500' : 'red.500'}
-                                    h={4}
-                                    borderRadius="full"
-                                    w={`${(customer.score_label / 10) * 100}%`}
-                                />
-                            </Box>
-                            <Text fontSize="sm" color="gray.600" mt={2}>
-                                {riskInfo.level} • {getSegmentLabel(customer.segment_label)}
-                            </Text>
+                        <Box textAlign="center">
+                            <RiskScoreGauge
+                                score={customer.score_label / 10}
+                                label="Risk Score"
+                            />
                         </Box>
 
                         <Box borderTopWidth={1} borderColor="gray.200" pt={4} mt={2}>

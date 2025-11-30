@@ -1,5 +1,5 @@
 import type { Customer, CustomerFilters, Transaction } from '@/types';
-import { apiService } from '@/lib/apiService';
+import { apiService, type PredictResponse } from '@/lib/apiService';
 
 class CustomerService {
   private customers: Customer[] = [];
@@ -158,6 +158,15 @@ class CustomerService {
       await apiService.triggerUnlearn(customerId);
     } catch (error) {
       console.error('Failed to trigger unlearn:', error);
+      throw error;
+    }
+  }
+
+  async predict(customerId: string): Promise<PredictResponse> {
+    try {
+      return await apiService.predict(customerId);
+    } catch (error) {
+      console.error('Failed to get prediction:', error);
       throw error;
     }
   }
