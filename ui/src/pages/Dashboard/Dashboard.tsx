@@ -105,7 +105,14 @@ export const Dashboard = () => {
         <Box minH="100vh" p={6}>
             <Box display="flex" flexDirection="column" gap={8}>
                 {/* Header */}
-
+                <Box mb={6}>
+                    <Heading size="lg" mb={2}>
+                        Dashboard
+                    </Heading>
+                    <Text color="gray.600">
+                        Overview of customer metrics and management
+                    </Text>
+                </Box>
 
                 {/* Metrics Cards */}
                 <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={6}>
