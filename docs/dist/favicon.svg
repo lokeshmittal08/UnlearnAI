@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <style>
+      .bank-icon { fill: #1a73e8; }
+      .bank-accent { fill: #34a853; }
+    </style>
+  </defs>
+
+  <!-- Bank building outline -->
+  <rect x="4" y="12" width="24" height="16" rx="2" class="bank-icon" stroke="#1a73e8" stroke-width="1.5" fill="none"/>
+
+  <!-- Bank columns -->
+  <rect x="6" y="14" width="2" height="12" class="bank-accent"/>
+  <rect x="10" y="14" width="2" height="12" class="bank-accent"/>
+  <rect x="14" y="14" width="2" height="12" class="bank-accent"/>
+  <rect x="18" y="14" width="2" height="12" class="bank-accent"/>
+  <rect x="22" y="14" width="2" height="12" class="bank-accent"/>
+
+  <!-- Bank roof -->
+  <polygon points="16,6 20,12 12,12" class="bank-icon" stroke="#1a73e8" stroke-width="1.5" fill="none"/>
+
+  <!-- Dollar symbol -->
+  <text x="16" y="22" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" class="bank-accent">$</text>
+</svg>
