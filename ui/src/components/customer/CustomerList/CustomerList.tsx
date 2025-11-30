@@ -114,24 +114,25 @@ export const CustomerList = ({ customers, onCustomerClick }: CustomerListProps) 
                         {table.getHeaderGroups().map((headerGroup) => (
                             <Table.Row key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => (
-                                    <Table.ColumnHeader key={header.id}>
+                                    <Table.ColumnHeader
+                                        key={header.id}
+                                        textAlign="left"
+                                        cursor="pointer"
+                                        _hover={{ bg: 'gray.100' }}
+                                        onClick={header.column.getToggleSortingHandler()}
+                                        p={3}
+                                    >
                                         {header.isPlaceholder ? null : (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={header.column.getToggleSortingHandler()}
-                                            >
-                                                <HStack>
-                                                    <Text>
-                                                        {flexRender(
-                                                            header.column.columnDef.header,
-                                                            header.getContext()
-                                                        )}
-                                                    </Text>
-                                                    {header.column.getIsSorted() === 'asc' && <ChevronUp size={16} />}
-                                                    {header.column.getIsSorted() === 'desc' && <ChevronDown size={16} />}
-                                                </HStack>
-                                            </Button>
+                                            <HStack justify="flex-start">
+                                                <Text fontWeight="medium">
+                                                    {flexRender(
+                                                        header.column.columnDef.header,
+                                                        header.getContext()
+                                                    )}
+                                                </Text>
+                                                {header.column.getIsSorted() === 'asc' && <ChevronUp size={16} />}
+                                                {header.column.getIsSorted() === 'desc' && <ChevronDown size={16} />}
+                                            </HStack>
                                         )}
                                     </Table.ColumnHeader>
                                 ))}
@@ -147,7 +148,7 @@ export const CustomerList = ({ customers, onCustomerClick }: CustomerListProps) 
                                 onClick={() => onCustomerClick?.(row.original)}
                             >
                                 {row.getVisibleCells().map((cell) => (
-                                    <Table.Cell key={cell.id}>
+                                    <Table.Cell key={cell.id} p={3}>
                                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                     </Table.Cell>
                                 ))}
