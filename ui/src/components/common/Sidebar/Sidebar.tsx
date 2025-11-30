@@ -22,7 +22,7 @@ export const Sidebar = () => {
         >
             <Box>
                 <Text fontSize="xl" fontWeight="bold" color="fg" mb="6" px="3">
-                    BankUI
+                    Future Bank
                 </Text>
                 <Box px="3">
                     <Stack direction="column" gap="2">
