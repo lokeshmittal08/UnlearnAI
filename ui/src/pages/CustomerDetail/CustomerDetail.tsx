@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Box,
-    Container,
     Heading,
     Text,
     Grid,
@@ -71,17 +70,17 @@ export const CustomerDetail = () => {
 
     if (isLoading) {
         return (
-            <Container maxW="7xl" py={8}>
+            <Box minH="100vh" p={6}>
                 <Flex justify="center" align="center" minH="400px">
                     <Spinner size="xl" />
                 </Flex>
-            </Container>
+            </Box>
         );
     }
 
     if (error || !customer) {
         return (
-            <Container maxW="7xl" py={8}>
+            <Box minH="100vh" p={6}>
                 <Box p={4} bg="red.50" borderRadius="xl" borderWidth={1} borderColor="red.200">
                     <Text color="red.600" fontWeight="medium">
                         {error || 'Customer not found'}
@@ -90,14 +89,14 @@ export const CustomerDetail = () => {
                 <Button mt={4} onClick={() => navigate('/customers')}>
                     Back to Customers
                 </Button>
-            </Container>
+            </Box>
         );
     }
 
     const riskInfo = getRiskLevel(customer.score_label);
 
     return (
-        <Container maxW="7xl" py={8}>
+        <Box minH="100vh" p={6}>
             {/* Header */}
             <Flex align="center" justify="space-between" mb={8}>
                 <Flex align="center">
@@ -401,6 +400,6 @@ export const CustomerDetail = () => {
                     </VStack>
                 </Grid>
             </Box>
-        </Container>
+        </Box>
     );
 };
