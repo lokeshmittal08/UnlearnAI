@@ -1,6 +1,5 @@
 import type { FC, ReactNode } from 'react';
 import { Box, Flex } from '@chakra-ui/react';
-import { Header } from '../Header/Header';
 import { Sidebar } from '../Sidebar/Sidebar';
 
 interface MainLayoutProps {
@@ -12,7 +11,6 @@ export const MainLayout: FC<MainLayoutProps> = ({ children }) => {
         <Flex minH="100vh">
             <Sidebar />
             <Flex flex="1" direction="column">
-                <Header />
                 <Box flex="1" p="6" overflowY="auto">
                     {children}
                 </Box>
