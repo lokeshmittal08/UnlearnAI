@@ -104,7 +104,7 @@ export const CustomerActionsMenu: FC<CustomerActionsMenuProps> = ({
                 >
                     <Dialog.Header fontSize="2xl">Success</Dialog.Header>
                     <Dialog.Body>
-                        <p>The right to be forgotten has been successfully invoked. The customer's data has been removed from the AI models.</p>
+                        <p>The right to be forgotten has been successfully exercised. The customer’s data has been removed from the AI models.</p>
                         <VStack gap={4} mt={4}>
                             <Button
                                 colorPalette="green"
