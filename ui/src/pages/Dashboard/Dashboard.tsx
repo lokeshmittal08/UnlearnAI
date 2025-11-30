@@ -12,7 +12,6 @@ import {
     Grid,
     Heading,
     Text,
-    Input,
     Button,
     Spinner,
     Flex,
@@ -31,7 +30,6 @@ const DollarIcon = () => (
 );
 
 export const Dashboard = () => {
-    const [searchQuery, setSearchQuery] = useState('');
     const { customers, isLoading, error } = useCustomers();
     const { filters, setFilters, clearFilters } = useCustomerStore();
     const navigate = useNavigate();
@@ -136,16 +134,9 @@ export const Dashboard = () => {
                         </Button>
                     </Flex>
 
-                    {/* Search and Filters */}
+                    {/* Filters */}
                     <Box display="flex" flexDirection="column" gap={4} mb={6}>
                         <Flex wrap="wrap" gap={3} w="full">
-                            <Input
-                                placeholder="Search customers..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                flex={1}
-                                minW="64"
-                            />
                             <select
                                 value={filters.status}
                                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilters({ status: e.target.value as 'active' | 'inactive' | 'suspended' | 'all' })}
@@ -161,26 +152,6 @@ export const Dashboard = () => {
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
                                 <option value="suspended">Suspended</option>
-                            </select>
-                        </Flex>
-
-                        <Flex wrap="wrap" gap={3} w="full">
-                            <select
-                                value={filters.accountType}
-                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilters({ accountType: e.target.value as 'checking' | 'savings' | 'investment' | 'credit' | 'all' })}
-                                style={{
-                                    padding: '8px 12px',
-                                    border: '1px solid #d1d5db',
-                                    borderRadius: '8px',
-                                    backgroundColor: 'white',
-                                    fontSize: '14px'
-                                }}
-                            >
-                                <option value="all">All Accounts</option>
-                                <option value="checking">Checking</option>
-                                <option value="savings">Savings</option>
-                                <option value="investment">Investment</option>
-                                <option value="credit">Credit</option>
                             </select>
                             <select
                                 value={filters.riskLevel}
@@ -200,7 +171,6 @@ export const Dashboard = () => {
                             </select>
                             <Button
                                 onClick={() => {
-                                    setSearchQuery('');
                                     clearFilters();
                                 }}
                                 variant="outline"
