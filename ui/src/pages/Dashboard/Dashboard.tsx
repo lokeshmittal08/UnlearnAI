@@ -30,18 +30,6 @@ const DollarIcon = () => (
     </svg>
 );
 
-const TrendingUpIcon = () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-    </svg>
-);
-
-const AlertIcon = () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-    </svg>
-);
-
 export const Dashboard = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const { customers, isLoading, error } = useCustomers();
@@ -59,12 +47,6 @@ export const Dashboard = () => {
             try {
                 const customerMetrics = await customerService.getCustomerMetrics();
 
-                // Calculate risk metrics from customer data
-                const highRiskCustomers = customers.filter(c => c.score_label < 0.3).length;
-                const previousHighRisk = Math.floor(highRiskCustomers * 0.9); // Assume 10% decrease
-                const riskChange = ((highRiskCustomers - previousHighRisk) / previousHighRisk) * 100;
-                const riskChangeType: 'increase' | 'decrease' = riskChange < 0 ? 'decrease' : 'increase';
-
                 const realMetrics = [
                     {
                         title: 'Total Customers',
@@ -77,18 +59,6 @@ export const Dashboard = () => {
                         value: formatCurrency(customerMetrics.totalBalance),
                         change: { value: 8.2, type: 'increase' as const },
                         icon: <DollarIcon />
-                    },
-                    {
-                        title: 'Active Accounts',
-                        value: customerMetrics.activeCustomers.toString(),
-                        change: { value: 3.1, type: 'increase' as const },
-                        icon: <TrendingUpIcon />
-                    },
-                    {
-                        title: 'High Risk',
-                        value: highRiskCustomers.toString(),
-                        change: { value: Math.abs(riskChange), type: riskChangeType },
-                        icon: <AlertIcon />
                     }
                 ];
 
@@ -108,18 +78,6 @@ export const Dashboard = () => {
                         value: '$0',
                         change: { value: 8.2, type: 'increase' as const },
                         icon: <DollarIcon />
-                    },
-                    {
-                        title: 'Active Accounts',
-                        value: '0',
-                        change: { value: 3.1, type: 'increase' as const },
-                        icon: <TrendingUpIcon />
-                    },
-                    {
-                        title: 'High Risk',
-                        value: '0',
-                        change: { value: 5.4, type: 'decrease' as const },
-                        icon: <AlertIcon />
                     }
                 ];
                 setMetrics(fallbackMetrics);
@@ -146,14 +104,13 @@ export const Dashboard = () => {
     }
 
     return (
-        <Box minH="100vh">
-            <Container maxW="7xl" py={6}>
-                <Box display="flex" flexDirection="column" gap={8}>
+        <Box minH="100vh" p={6}>
+            <Box display="flex" flexDirection="column" gap={8}>
                     {/* Header */}
 
 
                     {/* Metrics Cards */}
-                    <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={6}>
+                    <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={6}>
                         {metrics.map((metric, index) => (
                             <MetricsCard
                                 key={index}
@@ -276,7 +233,6 @@ export const Dashboard = () => {
                         )}
                     </Box>
                 </Box>
-            </Container>
         </Box>
     );
 };
