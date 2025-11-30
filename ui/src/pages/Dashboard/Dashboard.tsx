@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CustomerCard } from '@/components/customer/CustomerCard/CustomerCard';
 import { MetricsCard } from '@/components/dashboard/MetricsCard/MetricsCard';
-import { Analytics } from '@/components/dashboard/Analytics/Analytics';
-import { TransactionHistory } from '@/components/dashboard/TransactionHistory/TransactionHistory';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useCustomerStore } from '@/stores';
 import { useNavigate } from 'react-router-dom';
@@ -167,127 +165,116 @@ export const Dashboard = () => {
                         ))}
                     </Grid>
 
-                    {/* Analytics Section */}
-                    <Box>
-                        <Heading size="lg" mb={6}>Analytics Overview</Heading>
-                        <Analytics />
-                    </Box>
+                    {/* Customer Management */}
+                    <Box bg="white" borderRadius="xl" shadow="sm" borderWidth={1} borderColor="gray.100" p={6}>
+                        <Flex justify="space-between" align="center" mb={6}>
+                            <Heading size="md">Customer Management</Heading>
+                            <Button
+                                size="sm"
+                                colorScheme="blue"
+                                variant="ghost"
+                                onClick={() => navigate('/customers')}
+                            >
+                                View All
+                            </Button>
+                        </Flex>
 
-                    {/* Transaction History & Customer Management */}
-                    <Grid templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={8}>
-                        <TransactionHistory />
-
-                        {/* Customer Management Section */}
-                        <Box bg="white" borderRadius="xl" shadow="sm" borderWidth={1} borderColor="gray.100" p={6}>
-                            <Flex justify="space-between" align="center" mb={6}>
-                                <Heading size="md">Customer Management</Heading>
-                                <Button
-                                    size="sm"
-                                    colorScheme="blue"
-                                    variant="ghost"
-                                    onClick={() => navigate('/customers')}
+                        {/* Search and Filters */}
+                        <Box display="flex" flexDirection="column" gap={4} mb={6}>
+                            <Flex wrap="wrap" gap={3} w="full">
+                                <Input
+                                    placeholder="Search customers..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    flex={1}
+                                    minW="64"
+                                />
+                                <select
+                                    value={filters.status}
+                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilters({ status: e.target.value as 'active' | 'inactive' | 'suspended' | 'all' })}
+                                    style={{
+                                        padding: '8px 12px',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: '8px',
+                                        backgroundColor: 'white',
+                                        fontSize: '14px'
+                                    }}
                                 >
-                                    View All
-                                </Button>
+                                    <option value="all">All Status</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="suspended">Suspended</option>
+                                </select>
                             </Flex>
 
-                            {/* Search and Filters */}
-                            <Box display="flex" flexDirection="column" gap={4} mb={6}>
-                                <Flex wrap="wrap" gap={3} w="full">
-                                    <Input
-                                        placeholder="Search customers..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        flex={1}
-                                        minW="64"
-                                    />
-                                    <select
-                                        value={filters.status}
-                                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilters({ status: e.target.value as 'active' | 'inactive' | 'suspended' | 'all' })}
-                                        style={{
-                                            padding: '8px 12px',
-                                            border: '1px solid #d1d5db',
-                                            borderRadius: '8px',
-                                            backgroundColor: 'white',
-                                            fontSize: '14px'
-                                        }}
-                                    >
-                                        <option value="all">All Status</option>
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                        <option value="suspended">Suspended</option>
-                                    </select>
-                                </Flex>
-
-                                <Flex wrap="wrap" gap={3} w="full">
-                                    <select
-                                        value={filters.accountType}
-                                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilters({ accountType: e.target.value as 'checking' | 'savings' | 'investment' | 'credit' | 'all' })}
-                                        style={{
-                                            padding: '8px 12px',
-                                            border: '1px solid #d1d5db',
-                                            borderRadius: '8px',
-                                            backgroundColor: 'white',
-                                            fontSize: '14px'
-                                        }}
-                                    >
-                                        <option value="all">All Accounts</option>
-                                        <option value="checking">Checking</option>
-                                        <option value="savings">Savings</option>
-                                        <option value="investment">Investment</option>
-                                        <option value="credit">Credit</option>
-                                    </select>
-                                    <select
-                                        value={filters.riskLevel}
-                                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilters({ riskLevel: e.target.value as 'low' | 'medium' | 'high' | 'all' })}
-                                        style={{
-                                            padding: '8px 12px',
-                                            border: '1px solid #d1d5db',
-                                            borderRadius: '8px',
-                                            backgroundColor: 'white',
-                                            fontSize: '14px'
-                                        }}
-                                    >
-                                        <option value="all">All Risk Levels</option>
-                                        <option value="low">Low</option>
-                                        <option value="medium">Medium</option>
-                                        <option value="high">High</option>
-                                    </select>
-                                    <Button
-                                        onClick={() => {
-                                            setSearchQuery('');
-                                            clearFilters();
-                                        }}
-                                        variant="outline"
-                                    >
-                                        Clear Filters
-                                    </Button>
-                                </Flex>
-                            </Box>
-
-                            {/* Customer List */}
-                            {isLoading ? (
-                                <Flex justify="center" py={8}>
-                                    <Spinner size="lg" />
-                                </Flex>
-                            ) : (
-                                <Box display="flex" flexDirection="column" gap={3} maxH="96" overflowY="auto">
-                                    {customers.slice(0, 5).map((customer) => (
-                                        <CustomerCard
-                                            key={customer.customer_id}
-                                            customer={customer}
-                                            onClick={() => handleCustomerClick(customer.customer_id.toString())}
-                                        />
-                                    ))}
-                                    {customers.length === 0 && (
-                                        <Box p={6} textAlign="center" bg="gray.50" borderRadius="lg">
-                                            <Text color="gray.500">No customers found matching your criteria.</Text>
-                                        </Box>
-                                    )}
-                                </Box>
-                            )}
+                            <Flex wrap="wrap" gap={3} w="full">
+                                <select
+                                    value={filters.accountType}
+                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilters({ accountType: e.target.value as 'checking' | 'savings' | 'investment' | 'credit' | 'all' })}
+                                    style={{
+                                        padding: '8px 12px',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: '8px',
+                                        backgroundColor: 'white',
+                                        fontSize: '14px'
+                                    }}
+                                >
+                                    <option value="all">All Accounts</option>
+                                    <option value="checking">Checking</option>
+                                    <option value="savings">Savings</option>
+                                    <option value="investment">Investment</option>
+                                    <option value="credit">Credit</option>
+                                </select>
+                                <select
+                                    value={filters.riskLevel}
+                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilters({ riskLevel: e.target.value as 'low' | 'medium' | 'high' | 'all' })}
+                                    style={{
+                                        padding: '8px 12px',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: '8px',
+                                        backgroundColor: 'white',
+                                        fontSize: '14px'
+                                    }}
+                                >
+                                    <option value="all">All Risk Levels</option>
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                                <Button
+                                    onClick={() => {
+                                        setSearchQuery('');
+                                        clearFilters();
+                                    }}
+                                    variant="outline"
+                                >
+                                    Clear Filters
+                                </Button>
+                            </Flex>
                         </Box>
-                    </Grid>
+
+                        {/* Customer List */}
+                        {isLoading ? (
+                            <Flex justify="center" py={8}>
+                                <Spinner size="lg" />
+                            </Flex>
+                        ) : (
+                            <Box display="flex" flexDirection="column" gap={3} maxH="96" overflowY="auto">
+                                {customers.slice(0, 5).map((customer) => (
+                                    <CustomerCard
+                                        key={customer.customer_id}
+                                        customer={customer}
+                                        onClick={() => handleCustomerClick(customer.customer_id.toString())}
+                                    />
+                                ))}
+                                {customers.length === 0 && (
+                                    <Box p={6} textAlign="center" bg="gray.50" borderRadius="lg">
+                                        <Text color="gray.500">No customers found matching your criteria.</Text>
+                                    </Box>
+                                )}
+                            </Box>
+                        )}
+                    </Box>
                 </Box>
             </Container>
         </Box>
