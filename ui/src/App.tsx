@@ -7,7 +7,7 @@ import { Settings } from '@/pages/Settings/Settings';
 
 function App() {
   return (
-    <Router>
+    <Router basename="/UnlearnAI/">
       <MainLayout>
         <Routes>
           <Route path="/" element={<Dashboard />} />

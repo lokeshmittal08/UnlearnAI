@@ -55,6 +55,13 @@ class ApiService {
     });
   }
 
+  async getMetrics(customerId: string): Promise<any> {
+    // GET /metrics?customer_id=...
+    return httpClient.get(
+      `/metrics?customer_id=${encodeURIComponent(customerId)}`
+    );
+  }
+
   async reset(): Promise<unknown> {
     return httpClient.post('/reset', {});
   }

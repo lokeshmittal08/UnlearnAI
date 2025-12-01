@@ -56,5 +56,6 @@ export class HttpClient {
 
 // Default instance with localhost
 export const httpClient = new HttpClient({
-  baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+  baseUrl: 'https://smv3r14693b4mu-8000.proxy.runpod.net/',
+  // baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
 });

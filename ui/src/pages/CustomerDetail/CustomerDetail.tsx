@@ -11,9 +11,12 @@ import {
     Badge,
     VStack,
     IconButton,
+
 } from '@chakra-ui/react';
 import { ArrowLeft, CreditCard, Smartphone } from 'lucide-react';
 import { customerService } from '@/services';
+// apiService used by DataRemovalProof
+import { DataRemovalProof } from '@/components/customer/DataRemovalProof/DataRemovalProof';
 import { formatCurrency } from '@/utils';
 import { CustomerAvatar } from '@/components/common/CustomerAvatar';
 import { CustomerActionsMenu } from '@/components/common/CustomerActionsMenu';
@@ -26,6 +29,7 @@ export const CustomerDetail = () => {
     const [customer, setCustomer] = useState<Customer | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    // metrics moved to DataRemovalProof component
 
     useEffect(() => {
         const fetchCustomer = async () => {
@@ -342,6 +346,8 @@ export const CustomerDetail = () => {
                     </Grid>
                 </Box>
             </Grid>
+
+            <DataRemovalProof customerId={customer.customer_id.toString()} />
         </Box>
     );
 };
