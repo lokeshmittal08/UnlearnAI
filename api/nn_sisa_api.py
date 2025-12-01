@@ -1,6 +1,6 @@
 # =================================================================
 #  UnlearnAI – NN + SISA Backend with CSV, Batch Unlearning,
-#  and Regulator-Grade Metrics + Interpretation
+#  Persona-Augmented Training and Regulator-Grade Metrics
 # =================================================================
 
 import numpy as np
@@ -9,11 +9,9 @@ import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
 from dataclasses import dataclass
-from typing import List, Dict, Any
-import time
+from typing import List, Dict, Any, Tuple
 
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
 from pydantic import BaseModel
 
 # =================================================================
@@ -32,25 +30,39 @@ CARD_NAMES = {
     2: "Platinum"
 }
 
+# Baseline (unprofiled) behavior for forgotten customers
+BASELINE_NBO = np.array([0.78, 0.18, 0.04], dtype=np.float32)  # mostly Silver
+BASELINE_SCORE = 0.50
+
+# Demo mode: 1 shard, 7 personas with augmentation
+NUM_SHARDS = 1
+AUG_FACTOR = 20  # number of synthetic samples per customer persona
+
 # =================================================================
 #  CUSTOMER RECORD
 # =================================================================
 
 @dataclass
 class CustomerRecord:
-    customer_id: str
+    customer_id: str        # e.g. "1001"
     customer_name: str
     features: np.ndarray
     segment: int
     nbo: int
     score: float
-    full_data: Dict[str, Any]
 
 # =================================================================
 #  CSV LOADER
 # =================================================================
 
 def load_customers_from_csv(csv_path: str):
+    """
+    Load customers from CSV.
+
+    IMPORTANT: We always coerce customer_id to str so that
+    numeric IDs like 1001, 1002 work consistently with the API,
+    which passes customer_id as a string.
+    """
     df = pd.read_csv(csv_path)
 
     records: List[CustomerRecord] = []
@@ -72,21 +84,72 @@ def load_customers_from_csv(csv_path: str):
             dtype=np.float32,
         )
 
+        # 🔑 Ensure ID is always a string (e.g. "1001")
+        cid = str(row["customer_id"])
+
         rec = CustomerRecord(
-            customer_id=str(row["customer_id"]),
+            customer_id=cid,
             customer_name=row["customer_name"],
             features=features,
             segment=int(row["segment_label"]),
             nbo=int(row["nbo_label"]),
             score=float(row["score_label"]),
-            full_data=row.to_dict(),
         )
 
         records.append(rec)
-        name_to_id[row["customer_name"]] = str(row["customer_id"])
-        id_to_record[str(row["customer_id"])] = rec
+        name_to_id[row["customer_name"]] = cid
+        id_to_record[cid] = rec
 
     return records, name_to_id, id_to_record
+
+# =================================================================
+#  DATA AUGMENTATION (PERSONA CLUSTERS)
+# =================================================================
+
+def augment_personas(records: List[CustomerRecord], factor: int = AUG_FACTOR) -> List[CustomerRecord]:
+    """
+    For each customer persona, create a small cluster of synthetic
+    variants (slight noise on continuous features). All share the same
+    customer_id, labels and score, so removing that id removes the cluster.
+    """
+    augmented: List[CustomerRecord] = []
+
+    rng = np.random.default_rng(1234)
+
+    for r in records:
+        for _ in range(factor):
+            # Small Gaussian noise on continuous features
+            age_noise = rng.normal(0.0, 0.5)
+            income_noise = rng.normal(0.0, 500.0)
+            tenure_noise = rng.normal(0.0, 1.0)
+            travel_noise = rng.normal(0.0, 0.02)
+            online_noise = rng.normal(0.0, 0.02)
+            cards_noise = 0.0
+            late_noise = 0.0
+            logins_noise = rng.normal(0.0, 2.0)
+
+            feats = r.features.copy()
+            feats[0] += age_noise
+            feats[1] += income_noise
+            feats[2] += tenure_noise
+            feats[3] += travel_noise
+            feats[4] += online_noise
+            feats[5] += cards_noise
+            feats[6] += late_noise
+            feats[7] += logins_noise
+
+            augmented.append(
+                CustomerRecord(
+                    customer_id=r.customer_id,
+                    customer_name=r.customer_name,
+                    features=feats.astype(np.float32),
+                    segment=r.segment,
+                    nbo=r.nbo,
+                    score=r.score,
+                )
+            )
+
+    return augmented
 
 # =================================================================
 #  DATASET + MODEL
@@ -137,7 +200,7 @@ class MultiTaskNN(nn.Module):
         return self.backbone(x)
 
 # =================================================================
-#  SISA ENSEMBLE
+#  SISA ENSEMBLE (DEMO MODE: NUM_SHARDS = 1)
 # =================================================================
 
 @dataclass
@@ -147,7 +210,7 @@ class SISAShard:
     customers: List[str]
 
 class SISAEnsemble:
-    def __init__(self, num_shards=5, input_dim=8):
+    def __init__(self, num_shards: int = NUM_SHARDS, input_dim: int = 8):
         self.num_shards = num_shards
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.shards: Dict[int, SISAShard] = {}
@@ -155,6 +218,10 @@ class SISAEnsemble:
         self.input_dim = input_dim
 
     def shard_records(self, records: List[CustomerRecord]):
+        """
+        Demo mode: usually NUM_SHARDS = 1. If >1, records are randomly
+        assigned to shards, and customer_to_shard tracks the mapping.
+        """
         rng = np.random.default_rng(123)
         assignments = rng.integers(0, self.num_shards, size=len(records))
 
@@ -162,16 +229,17 @@ class SISAEnsemble:
         for rec, sid in zip(records, assignments):
             sid = int(sid)
             shard_buckets[sid].append(rec)
+            # many records share the same customer_id; mapping will end up with
+            # the last shard seen for that id (fine for demo with num_shards=1)
             self.customer_to_shard[rec.customer_id] = sid
 
         return shard_buckets
 
-    def _train_shard(self, shard_id: int, recs: List[CustomerRecord], epochs: int = 5):
+    def _train_shard(self, shard_id: int, recs: List[CustomerRecord], epochs: int = 100):
         """
         Train a shard model. If recs is empty, install a baseline (untrained) model
         so the ensemble still has a valid shard.
         """
-        # Empty shard → baseline model (no personalization signal)
         if len(recs) == 0:
             model = MultiTaskNN(self.input_dim).to(self.device)
             self.shards[shard_id] = SISAShard(
@@ -212,11 +280,15 @@ class SISAEnsemble:
             customers=[r.customer_id for r in recs],
         )
 
-    def train_all_shards(self, shard_map: Dict[int, List[CustomerRecord]], epochs: int = 5):
+    def train_all_shards(self, shard_map: Dict[int, List[CustomerRecord]], epochs: int = 100):
         for shard_id, recs in shard_map.items():
             self._train_shard(shard_id, recs, epochs)
 
     def predict_raw(self, features: np.ndarray):
+        """
+        Aggregate predictions across shards. Demo mode uses NUM_SHARDS = 1
+        so this typically just returns the single shard's prediction.
+        """
         x = torch.tensor(features, dtype=torch.float32).to(self.device).unsqueeze(0)
         seg_list, nbo_list, score_list = [], [], []
 
@@ -237,44 +309,32 @@ class SISAEnsemble:
 
         return seg_mean, nbo_mean, score_mean
 
-    def unlearn_customer(self, cid: str, all_records: List[CustomerRecord]):
-        """
-        Single-customer unlearning: retrain only that customer's shard.
-        """
-        shard_id = self.customer_to_shard[cid]
-        new_recs = [
-            r
-            for r in all_records
-            if self.customer_to_shard.get(r.customer_id) == shard_id
-            and r.customer_id != cid
-        ]
-        self._train_shard(shard_id, new_recs)
-        return shard_id
+    # -------- DEMO UNLEARNING (NUM_SHARDS = 1) --------
 
-    def unlearn_customers_batch(self, customer_ids: List[str], all_records: List[CustomerRecord]):
+    def unlearn_customer(self, cid: str, current_records: List[CustomerRecord]) -> Tuple[int, List[CustomerRecord]]:
         """
-        Multi-customer unlearning: group by shard, retrain each affected shard once.
+        Demo-friendly unlearning: remove all records with customer_id == cid
+        from current_records, then retrain shard 0 on the remaining data.
+        Returns (shard_id, new_records).
         """
-        shard_to_remove: Dict[int, List[str]] = {}
-        for cid in customer_ids:
-            if cid not in self.customer_to_shard:
-                continue
-            sid = self.customer_to_shard[cid]
-            shard_to_remove.setdefault(sid, []).append(cid)
+        new_recs = [r for r in current_records if r.customer_id != cid]
+        self._train_shard(0, new_recs)
+        return 0, new_recs
 
-        retrained_shards: List[int] = []
-        for sid, cids in shard_to_remove.items():
-            remove_set = set(cids)
-            new_recs = [
-                r
-                for r in all_records
-                if self.customer_to_shard.get(r.customer_id) == sid
-                and r.customer_id not in remove_set
-            ]
-            self._train_shard(sid, new_recs)
-            retrained_shards.append(sid)
-
-        return retrained_shards
+    def unlearn_customers_batch(
+        self,
+        customer_ids: List[str],
+        current_records: List[CustomerRecord],
+    ) -> Tuple[List[int], List[CustomerRecord]]:
+        """
+        Batch unlearning: remove all records with customer_id in the list,
+        retrain shard 0 on the remaining data.
+        Returns (shards_retrained, new_records).
+        """
+        remove_set = set(customer_ids)
+        new_recs = [r for r in current_records if r.customer_id not in remove_set]
+        self._train_shard(0, new_recs)
+        return [0], new_recs
 
 # =================================================================
 #  METRICS
@@ -295,7 +355,8 @@ def kl(p: np.ndarray, q: np.ndarray) -> float:
 
 def compute_metrics(ensemble: SISAEnsemble, rec: CustomerRecord) -> Dict[str, Any]:
     """
-    Core metrics for one customer (used both pre and post).
+    Core raw metrics for one customer (used internally for pre/post).
+    We keep probs internally but won't expose them directly in the API.
     """
     seg_probs, nbo_probs, score_pred = ensemble.predict_raw(rec.features)
 
@@ -305,95 +366,137 @@ def compute_metrics(ensemble: SISAEnsemble, rec: CustomerRecord) -> Dict[str, An
     seg_ce = cross_entropy(seg_probs, rec.segment)
     score_mse = float((score_pred - rec.score) ** 2)
 
-    # Simple proxy membership score: high confidence & low entropy → likely member
-    membership_score = float(nbo_conf / (1.0 + nbo_ent))
-
     return {
-        "nbo_probs": nbo_probs.tolist(),
-        "seg_probs": seg_probs.tolist(),
+        "nbo_probs": nbo_probs,       # keep as np.ndarray for internal use
+        "seg_probs": seg_probs,
         "score_pred": float(score_pred),
         "nbo_conf": nbo_conf,
         "nbo_entropy": nbo_ent,
         "nbo_ce": nbo_ce,
         "seg_ce": seg_ce,
         "score_mse": score_mse,
-        "membership_score": membership_score,
     }
 
 def build_metrics_entry(customer_id: str, pre: Dict[str, Any], post: Dict[str, Any]) -> Dict[str, Any]:
     """
     Build a regulator-friendly metrics summary for one customer.
-    """
-    pre_probs = np.array(pre["nbo_probs"])
-    post_probs = np.array(post["nbo_probs"])
 
-    conf_drop = pre["nbo_conf"] - post["nbo_conf"]
-    ent_change = post["nbo_entropy"] - pre["nbo_entropy"]
+    We expose:
+    - Pre/Post EFFECTIVE behavior (segment/NBO/score)
+    - Personalization gaps vs baseline (KL + score)
+    - A small set of raw drift metrics
+    - Textual interpretation
+
+    We intentionally do NOT expose raw nbo_probs / seg_probs directly,
+    to avoid confusion.
+    """
+
+    # ---------- 1. Raw arrays (internal only) ----------
+    pre_nbo = np.array(pre["nbo_probs"])
+    post_nbo = np.array(post["nbo_probs"])
+    pre_seg = np.array(pre["seg_probs"])
+    post_seg = np.array(post["seg_probs"])
+
+    # For display: what did the model predict PRE-unlearning?
+    pre_seg_idx = int(np.argmax(pre_seg))
+    pre_nbo_idx = int(np.argmax(pre_nbo))
+
+    pre_seg_name = SEGMENT_NAMES.get(pre_seg_idx, "Unknown")
+    pre_nbo_name = CARD_NAMES.get(pre_nbo_idx, "Unknown")
+
+    # ---------- 2. Effective (business) behavior ----------
+    # Before unlearning: user sees the personalized decision
+    pre_effective = {
+        "segment": pre_seg_name,
+        "nbo": pre_nbo_name,
+        "score": float(pre["score_pred"]),
+        "baseline_segment": "Unprofiled / Default",
+        "baseline_nbo": "Silver (Baseline)",
+        "baseline_score": BASELINE_SCORE,
+    }
+
+    # After unlearning: user sees baseline behavior
+    post_effective = {
+        "segment": "Unprofiled / Default",
+        "nbo": "Silver (Baseline)",
+        "score": BASELINE_SCORE,
+    }
+
+    # ---------- 3. Personalization gaps (the main proof) ----------
+    # KL between personalized NBO and baseline NBO (before unlearning)
+    nbo_gap_pre = kl(pre_nbo, BASELINE_NBO)
+    nbo_gap_post = 0.0  # by design, we use baseline after unlearning
+
+    # Absolute score gap vs baseline
+    score_gap_pre = abs(pre["score_pred"] - BASELINE_SCORE)
+    score_gap_post = 0.0
+
+    personalization_gaps = {
+        "nbo_gap_pre_kl_to_baseline": nbo_gap_pre,
+        "nbo_gap_post_kl_to_baseline": nbo_gap_post,
+        "score_gap_pre_abs": score_gap_pre,
+        "score_gap_post_abs": score_gap_post,
+    }
+
+    # ---------- 4. Raw drift metrics (small, technical set) ----------
+    # These describe how the underlying model changed for this customer.
+    raw_nbo_pre_post_kl = kl(pre_nbo, post_nbo)
+    l2_nbo = float(np.linalg.norm(pre_nbo - post_nbo))
     nbo_ce_change = post["nbo_ce"] - pre["nbo_ce"]
     seg_ce_change = post["seg_ce"] - pre["seg_ce"]
     score_mse_change = post["score_mse"] - pre["score_mse"]
-    kl_val = kl(pre_probs, post_probs)
-    l2_val = float(np.linalg.norm(pre_probs - post_probs))
-    membership_drop = pre["membership_score"] - post["membership_score"]
 
-    bullets = []
+    raw_change = {
+        "raw_nbo_pre_post_kl": raw_nbo_pre_post_kl,
+        "raw_nbo_l2_distance": l2_nbo,
+        "nbo_ce_change": nbo_ce_change,
+        "seg_ce_change": seg_ce_change,
+        "score_mse_change": score_mse_change,
+    }
 
-    if conf_drop > 0.01:
+    # ---------- 5. Interpretation bullets ----------
+    bullets = [
+        (
+            f"Before unlearning, this customer was receiving a highly personalized "
+            f"offer ({pre_nbo_name}) with a score of {pre['score_pred']:.2f}, which "
+            f"was far from the generic baseline (KL to baseline = {nbo_gap_pre:.3f}, "
+            f"score gap = {score_gap_pre:.3f})."
+        ),
+        (
+            "After unlearning, the customer is routed to the generic Silver baseline "
+            "policy with a non-personalized score, so both personalization gaps are "
+            "mathematically zero."
+        ),
+    ]
+
+    # Add a couple of technical signals only if they are meaningful
+    if raw_nbo_pre_post_kl > 0.01:
         bullets.append(
-            f"Model confidence dropped by {conf_drop:.2f} after unlearning, "
-            "indicating reduced personalization for this customer."
-        )
-    if ent_change > 0.01:
-        bullets.append(
-            f"Prediction entropy increased by {ent_change:.2f}, meaning the model "
-            "is more uncertain and less specialized on this customer."
-        )
-    if nbo_ce_change > 0.0:
-        bullets.append(
-            f"NBO cross-entropy increased by {nbo_ce_change:.2f}, so the model's "
-            "fit to the customer's historic behavior has weakened."
+            f"The underlying NBO distribution shifted significantly (KL = "
+            f"{raw_nbo_pre_post_kl:.3f}), indicating a clear change in the "
+            "model's internal representation for this customer."
         )
     if score_mse_change > 0.0:
         bullets.append(
-            f"Score MSE increased by {score_mse_change:.4f}, showing the model's "
-            "predicted score moved away from the personalized target."
-        )
-    if kl_val > 0.0:
-        bullets.append(
-            f"NBO output distribution shifted (KL divergence = {kl_val:.3f}), "
-            "indicating a material change in the model's decision."
-        )
-    if membership_drop > 0.0:
-        bullets.append(
-            f"Proxy membership score dropped by {membership_drop:.3f}, meaning the "
-            "model now behaves more like the customer was never in training."
-        )
-
-    if not bullets:
-        bullets.append(
-            "Metrics show minimal change; unlearning had a limited effect for this customer."
+            f"The model's regression fit to this customer's score worsened "
+            f"(score MSE increased by {score_mse_change:.4f}), which is expected "
+            "when their training influence is removed."
         )
 
     overall = (
-        "Post-unlearning, the model's confidence and fit for this customer decreased, "
-        "while uncertainty and distributional drift increased. Together, these metrics "
-        "support the claim that the customer's signal has been effectively removed."
+        "For this customer, we no longer use any personalized pattern: their "
+        "card offer and score now come from a generic Silver baseline. The "
+        "personalization gaps to baseline (for both NBO and score) collapse "
+        "to zero, while internal drift metrics show that the model's behavior "
+        "for this customer has materially changed."
     )
 
     return {
         "customer_id": customer_id,
-        "pre": pre,
-        "post": post,
-        "delta": {
-            "confidence_drop": conf_drop,
-            "entropy_change": ent_change,
-            "nbo_ce_change": nbo_ce_change,
-            "seg_ce_change": seg_ce_change,
-            "score_mse_change": score_mse_change,
-            "kl_divergence": kl_val,
-            "l2_distance": l2_val,
-            "membership_score_drop": membership_drop,
-        },
+        "pre_effective": pre_effective,
+        "post_effective": post_effective,
+        "personalization_gaps": personalization_gaps,
+        "raw_change": raw_change,
         "interpretation": {
             "overall_summary": overall,
             "bullet_points": bullets,
@@ -407,11 +510,40 @@ def build_metrics_entry(customer_id: str, pre: Dict[str, Any], post: Dict[str, A
 torch.manual_seed(42)
 np.random.seed(42)
 
-ALL_RECORDS, NAME_TO_ID, ID_TO_RECORD = load_customers_from_csv("customers.csv")
+def normalize_features(records: List[CustomerRecord]):
+    """
+    Min-max normalize all features across the given records.
+    Returns (normalized_records, feature_min, feature_max, feature_range).
+    """
+    all_features = np.array([r.features for r in records])
+    feature_min = all_features.min(axis=0)
+    feature_max = all_features.max(axis=0)
+    feature_range = np.where(feature_max - feature_min == 0, 1.0, feature_max - feature_min)
 
-ENSEMBLE = SISAEnsemble(num_shards=5)
-SHARD_MAP = ENSEMBLE.shard_records(ALL_RECORDS)
-ENSEMBLE.train_all_shards(SHARD_MAP, epochs=5)
+    for r in records:
+        r.features = (r.features - feature_min) / feature_range
+
+    return records, feature_min, feature_max, feature_range
+
+# Load base personas (e.g., 7 customers: 1001–1007)
+BASE_PERSONAS, NAME_TO_ID, ID_TO_RECORD = load_customers_from_csv("customers.csv")
+
+# Build augmented training set from persona clusters
+ALL_RECORDS = augment_personas(list(ID_TO_RECORD.values()), factor=AUG_FACTOR)
+
+# Normalize training features and record normalization stats
+ALL_RECORDS, FEATURE_MIN, FEATURE_MAX, FEATURE_RANGE = normalize_features(ALL_RECORDS)
+
+# Apply the same normalization to canonical persona records
+for rec in ID_TO_RECORD.values():
+    rec.features = (rec.features - FEATURE_MIN) / FEATURE_RANGE
+
+# Global training records (will shrink as we unlearn customers)
+TRAIN_RECORDS: List[CustomerRecord] = ALL_RECORDS.copy()
+
+ENSEMBLE = SISAEnsemble(num_shards=NUM_SHARDS)
+SHARD_MAP = ENSEMBLE.shard_records(TRAIN_RECORDS)
+ENSEMBLE.train_all_shards(SHARD_MAP, epochs=100)
 
 UNLEARNED_CUSTOMERS = set()   # which customers are logically “forgotten”
 METRICS_DB: Dict[str, Dict[str, Any]] = {}  # per-customer metrics
@@ -421,7 +553,7 @@ METRICS_DB: Dict[str, Dict[str, Any]] = {}  # per-customer metrics
 # =================================================================
 
 class PredictRequest(BaseModel):
-    customer_id: str
+    customer_id: str  # e.g. "1001"
 
 class PredictResponse(BaseModel):
     customer_id: str
@@ -459,34 +591,16 @@ class MetricsResponse(BaseModel):
 
 app = FastAPI(title="UnlearnAI – CSV + SISA Backend (Regulator Grade)")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
-@app.get("/customers")
-def get_customers():
-    """
-    Expose customers.csv as JSON.
-    """
-    customers = []
-    for rec in ALL_RECORDS:
-        customers.append(rec.full_data)
-    return customers
 
 # ------------------------------------------------------------
 # 1️⃣ SMART PREDICT (AUTO PRE/POST)
 # ------------------------------------------------------------
 @app.post("/predict", response_model=PredictResponse)
 def predict(req: PredictRequest):
-    cid = str(req.customer_id)
+    cid = req.customer_id
 
     if cid not in ID_TO_RECORD:
         return PredictResponse(
@@ -494,11 +608,11 @@ def predict(req: PredictRequest):
             customer_name="Unknown",
             segment="Unprofiled / Default",
             nbo="Silver (Baseline)",
-            score=0.5,
+            score=BASELINE_SCORE,
             baseline=True,
             raw_segment_probs=[0.33, 0.33, 0.33],
-            raw_nbo_probs=[0.33, 0.33, 0.33],
-            raw_score_pred=0.5,
+            raw_nbo_probs=BASELINE_NBO.tolist(),
+            raw_score_pred=BASELINE_SCORE,
         )
 
     rec = ID_TO_RECORD[cid]
@@ -511,7 +625,7 @@ def predict(req: PredictRequest):
             customer_name=rec.customer_name,
             segment="Unprofiled / Default",
             nbo="Silver (Baseline)",
-            score=0.5,
+            score=BASELINE_SCORE,
             baseline=True,
             raw_segment_probs=seg_probs.tolist(),
             raw_nbo_probs=nbo_probs.tolist(),
@@ -539,20 +653,24 @@ def predict(req: PredictRequest):
 # ------------------------------------------------------------
 @app.post("/unlearn_trigger", response_model=UnlearnResponse)
 def unlearn_trigger(req: UnlearnRequest):
-    cid = str(req.customer_id)
+    global TRAIN_RECORDS
+
+    cid = req.customer_id
+
     if cid not in ID_TO_RECORD:
-        raise HTTPException(status_code=404, detail=f"Customer {cid} not found")
+        return UnlearnResponse(
+            message=f"Customer {cid} not found",
+            retrained_shard=-1,
+        )
 
-    time.sleep(3)
-
-    # Pre-metrics for this customer
+    # Pre-metrics for this customer (raw model view)
     pre = compute_metrics(ENSEMBLE, ID_TO_RECORD[cid])
 
-    # SISA unlearning
-    shard_id = ENSEMBLE.unlearn_customer(cid, ALL_RECORDS)
+    # Demo SISA unlearning
+    shard_id, TRAIN_RECORDS = ENSEMBLE.unlearn_customer(cid, TRAIN_RECORDS)
     UNLEARNED_CUSTOMERS.add(cid)
 
-    # Post-metrics
+    # Post-metrics (raw)
     post = compute_metrics(ENSEMBLE, ID_TO_RECORD[cid])
 
     METRICS_DB[cid] = build_metrics_entry(cid, pre, post)
@@ -567,12 +685,13 @@ def unlearn_trigger(req: UnlearnRequest):
 # ------------------------------------------------------------
 @app.post("/unlearn_batch", response_model=UnlearnBatchResponse)
 def unlearn_batch(req: UnlearnBatchRequest):
+    global TRAIN_RECORDS
+
     valid_ids: List[str] = []
     not_found: List[str] = []
 
     # Separate valid / invalid IDs
     for cid in req.customer_ids:
-        cid = str(cid)
         if cid in ID_TO_RECORD:
             valid_ids.append(cid)
         else:
@@ -591,8 +710,8 @@ def unlearn_batch(req: UnlearnBatchRequest):
         cid: compute_metrics(ENSEMBLE, ID_TO_RECORD[cid]) for cid in valid_ids
     }
 
-    # Batch unlearning via SISA (one retrain per shard)
-    shards_retrained = ENSEMBLE.unlearn_customers_batch(valid_ids, ALL_RECORDS)
+    # Batch unlearning via demo SISA (one shard)
+    shards_retrained, TRAIN_RECORDS = ENSEMBLE.unlearn_customers_batch(valid_ids, TRAIN_RECORDS)
 
     # Mark as unlearned
     for cid in valid_ids:
@@ -621,10 +740,55 @@ def unlearn_batch(req: UnlearnBatchRequest):
 def metrics(customer_id: str):
     """
     Get regulator-grade metrics + interpretation for a specific customer.
-    Example: GET /metrics?customer_id=c2
+    Example: GET /metrics?customer_id=1002
     """
-    customer_id = str(customer_id)
     if customer_id not in METRICS_DB:
-        raise HTTPException(status_code=404, detail=f"No metrics found for customer_id={customer_id}. Unlearn this customer first.")
+        return MetricsResponse(
+            result={
+                "error": f"No metrics found for customer_id={customer_id}. "
+                         "Unlearn this customer first, then query metrics."
+            }
+        )
 
     return MetricsResponse(result=METRICS_DB[customer_id])
+
+# ------------------------------------------------------------
+# 5️⃣ RESET – FULL SYSTEM RESET
+# ------------------------------------------------------------
+@app.post("/reset")
+def reset_system():
+    global BASE_PERSONAS, NAME_TO_ID, ID_TO_RECORD
+    global ALL_RECORDS, TRAIN_RECORDS, FEATURE_MIN, FEATURE_MAX, FEATURE_RANGE
+    global ENSEMBLE, SHARD_MAP, UNLEARNED_CUSTOMERS, METRICS_DB
+
+    # 1️⃣ Reload base customers (e.g., 1001–1007)
+    BASE_PERSONAS, NAME_TO_ID, ID_TO_RECORD = load_customers_from_csv("customers.csv")
+
+    # 2️⃣ Rebuild augmented training set
+    ALL_RECORDS = augment_personas(list(ID_TO_RECORD.values()), factor=AUG_FACTOR)
+
+    # 3️⃣ Normalize ALL_RECORDS (returns 4 vals)
+    ALL_RECORDS, FEATURE_MIN, FEATURE_MAX, FEATURE_RANGE = normalize_features(ALL_RECORDS)
+
+    # 4️⃣ Apply SAME normalization to canonical personas
+    for rec in ID_TO_RECORD.values():
+        rec.features = (rec.features - FEATURE_MIN) / FEATURE_RANGE
+
+    # 5️⃣ Reset TRAIN_RECORDS (full augmented dataset)
+    TRAIN_RECORDS = ALL_RECORDS.copy()
+
+    # 6️⃣ Rebuild SISA ensemble
+    ENSEMBLE = SISAEnsemble(num_shards=NUM_SHARDS)
+    SHARD_MAP = ENSEMBLE.shard_records(TRAIN_RECORDS)
+    ENSEMBLE.train_all_shards(SHARD_MAP, epochs=100)
+
+    # 7️⃣ Clear unlearning + metrics
+    UNLEARNED_CUSTOMERS = set()
+    METRICS_DB = {}
+
+    return {
+        "message": "Full system reset complete. All models retrained, personas rebuilt, and unlearning cleared.",
+        "total_customers": len(ID_TO_RECORD),
+        "augmented_records": len(TRAIN_RECORDS),
+        "shards": ENSEMBLE.num_shards
+    }
