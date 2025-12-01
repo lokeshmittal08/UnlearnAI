@@ -17,7 +17,6 @@ import { customerService } from '@/services';
 import { formatCurrency } from '@/utils';
 import { CustomerAvatar } from '@/components/common/CustomerAvatar';
 import { CustomerActionsMenu } from '@/components/common/CustomerActionsMenu';
-import { RiskScoreGauge } from '@/components/common/RiskScoreGauge';
 import { AIPromo } from '@/components/customer/AIPromo';
 import type { Customer } from '@/types';
 
@@ -317,89 +316,32 @@ export const CustomerDetail = () => {
                     borderColor="border"
                     p={6}
                 >
-                    <Heading size="md" mb={4}>Risk Assessment</Heading>
-                    <VStack gap={4} align="stretch">
-                        <Box textAlign="center">
-                            <RiskScoreGauge
-                                score={customer.score_label / 10}
-                                label="Risk Score"
-                            />
-                        </Box>
-
-                        <Box borderTopWidth={1} borderColor="gray.200" pt={4} mt={2}>
-                            <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                                <Box textAlign="center" p={3} bg="gray.50" borderRadius="md">
-                                    <Text fontSize="lg" fontWeight="bold">
-                                        {customer.nbo_label}
-                                    </Text>
-                                    <Text fontSize="sm" color="gray.600">
-                                        NBO Label
-                                    </Text>
-                                </Box>
-                                <Box textAlign="center" p={3} bg="gray.50" borderRadius="md">
-                                    <Text fontSize="lg" fontWeight="bold">
-                                        {customer.segment_label}
-                                    </Text>
-                                    <Text fontSize="sm" color="gray.600">
-                                        Segment
-                                    </Text>
-                                </Box>
-                            </Grid>
-                        </Box>
-
-                        {customer.late_12m > 0 && (
-                            <Box p={3} bg="orange.50" borderRadius="md" borderWidth={1} borderColor="orange.200">
-                                <Text color="orange.700">
-                                    Customer has {customer.late_12m} late payment(s) in the last 12 months
-                                </Text>
+                    <Heading size="md" mb={4}>Customer Profile Summary</Heading>
+                    <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={6}>
+                        <VStack gap={3} align="stretch">
+                            <Box>
+                                <Text fontWeight="bold" mb={1}>Customer ID</Text>
+                                <Text>{customer.customer_id}</Text>
                             </Box>
-                        )}
-                    </VStack>
+                            <Box>
+                                <Text fontWeight="bold" mb={1}>Age</Text>
+                                <Text>{customer.age} years old</Text>
+                            </Box>
+                        </VStack>
+
+                        <VStack gap={3} align="stretch">
+                            <Box>
+                                <Text fontWeight="bold" mb={1}>Tenure</Text>
+                                <Text>{customer.tenure_months} months ({Math.floor(customer.tenure_months / 12)} years)</Text>
+                            </Box>
+                            <Box>
+                                <Text fontWeight="bold" mb={1}>Annual Income</Text>
+                                <Text>{formatCurrency(customer.income)}</Text>
+                            </Box>
+                        </VStack>
+                    </Grid>
                 </Box>
             </Grid>
-
-            {/* Additional Information */}
-            <Box
-                bg="bg"
-                borderRadius="xl"
-                shadow="sm"
-                borderWidth={1}
-                borderColor="border"
-                p={6}
-            >
-                <Heading size="md" mb={4}>Customer Profile Summary</Heading>
-                <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={6}>
-                    <VStack gap={3} align="stretch">
-                        <Box>
-                            <Text fontWeight="bold" mb={1}>Customer ID</Text>
-                            <Text>{customer.customer_id}</Text>
-                        </Box>
-                        <Box>
-                            <Text fontWeight="bold" mb={1}>Age</Text>
-                            <Text>{customer.age} years old</Text>
-                        </Box>
-                        <Box>
-                            <Text fontWeight="bold" mb={1}>Tenure</Text>
-                            <Text>{customer.tenure_months} months ({Math.floor(customer.tenure_months / 12)} years)</Text>
-                        </Box>
-                    </VStack>
-
-                    <VStack gap={3} align="stretch">
-                        <Box>
-                            <Text fontWeight="bold" mb={1}>Annual Income</Text>
-                            <Text>{formatCurrency(customer.income)}</Text>
-                        </Box>
-                        <Box>
-                            <Text fontWeight="bold" mb={1}>Risk Profile</Text>
-                            <Badge colorScheme={riskInfo.color}>{riskInfo.level}</Badge>
-                        </Box>
-                        <Box>
-                            <Text fontWeight="bold" mb={1}>Customer Segment</Text>
-                            <Badge colorScheme="blue">{getSegmentLabel(customer.segment_label)}</Badge>
-                        </Box>
-                    </VStack>
-                </Grid>
-            </Box>
         </Box>
     );
 };

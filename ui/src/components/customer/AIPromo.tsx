@@ -1,12 +1,10 @@
 import type { FC } from 'react';
 import { useState } from 'react';
-import { Box, Heading, Button, VStack, Text, Badge, Grid, Flex } from '@chakra-ui/react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { Box, Heading, Button, VStack, Text, Badge, Grid } from '@chakra-ui/react';
 import { customerService } from '@/services';
 import type { PredictResponse } from '@/lib/apiService';
 import { CreditCard } from '@/components/common/CreditCard';
 import { RiskScoreGauge } from '@/components/common/RiskScoreGauge';
-import { NBOProbabilitiesChart } from '@/components/common/NBOProbabilitiesChart';
 
 interface AIPromoProps {
     customerId: string;
@@ -16,7 +14,6 @@ export const AIPromo: FC<AIPromoProps> = ({ customerId }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [prediction, setPrediction] = useState<PredictResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [isPredictionDetailsExpanded, setIsPredictionDetailsExpanded] = useState(false);
 
     const handleSuggestCard = async () => {
         setIsLoading(true);
@@ -108,47 +105,10 @@ export const AIPromo: FC<AIPromoProps> = ({ customerId }) => {
                                     </Badge>
                                 </Box>
                             </Grid>
-
-                            {/* Prediction Details - Collapsible */}
-                            <Box borderTopWidth={1} borderColor="gray.200" pt={4}>
-                                <Flex
-                                    justify="space-between"
-                                    align="center"
-                                    cursor="pointer"
-                                    onClick={() => setIsPredictionDetailsExpanded(!isPredictionDetailsExpanded)}
-                                    _hover={{ bg: "gray.50", color: "gray.900" }}
-                                    p={2}
-                                    borderRadius="md"
-                                    transition="all 0.2s"
-                                >
-                                    <Text fontWeight="bold" color="inherit">Prediction Details</Text>
-                                    {isPredictionDetailsExpanded ? (
-                                        <ChevronUp size={16} />
-                                    ) : (
-                                        <ChevronDown size={16} />
-                                    )}
-                                </Flex>
-
-                                {isPredictionDetailsExpanded && (
-                                    <VStack gap={4} align="stretch" mt={3}>
-                                        <Box>
-                                            <Text fontSize="sm" fontWeight="medium" mb={2}>Segment Probabilities</Text>
-                                            <Text fontSize="sm" color="gray.600">{prediction.raw_segment_probs.join(', ')}</Text>
-                                        </Box>
-
-                                        <NBOProbabilitiesChart probabilities={prediction.raw_nbo_probs} />
-
-                                        <Box>
-                                            <Text fontSize="sm" fontWeight="medium" mb={1}>Raw Score</Text>
-                                            <Text fontSize="sm" color="gray.600">{prediction.raw_score_pred.toFixed(3)}</Text>
-                                        </Box>
-                                    </VStack>
-                                )}
-                            </Box>
                         </Box>
 
                         {/* Credit Card section - 1 column on large screens */}
-                        {(prediction.nbo === "Platinum" || prediction.nbo === "Gold" || prediction.nbo === "Silver") && (
+                        {(prediction.nbo === "Platinum" || prediction.nbo === "Gold" || prediction.nbo.toLowerCase().includes("silver")) && (
                             <Box gridColumn={{ base: '1', lg: '3' }}>
                                 <Text fontWeight="bold" mb={4}>Recommended Credit Card:</Text>
                                 <CreditCard
