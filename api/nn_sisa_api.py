@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import List, Dict, Any, Tuple
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # =================================================================
@@ -590,6 +591,14 @@ class MetricsResponse(BaseModel):
 # =================================================================
 
 app = FastAPI(title="UnlearnAI – CSV + SISA Backend (Regulator Grade)")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/health")
 def health():
