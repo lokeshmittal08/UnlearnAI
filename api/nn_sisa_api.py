@@ -51,6 +51,7 @@ class CustomerRecord:
     segment: int
     nbo: int
     score: float
+    full_data: Dict[str, Any]
 
 # =================================================================
 #  CSV LOADER
@@ -95,6 +96,7 @@ def load_customers_from_csv(csv_path: str):
             segment=int(row["segment_label"]),
             nbo=int(row["nbo_label"]),
             score=float(row["score_label"]),
+            full_data=row.to_dict(),
         )
 
         records.append(rec)
@@ -147,6 +149,7 @@ def augment_personas(records: List[CustomerRecord], factor: int = AUG_FACTOR) ->
                     segment=r.segment,
                     nbo=r.nbo,
                     score=r.score,
+                    full_data=r.full_data,
                 )
             )
 
@@ -741,6 +744,16 @@ def unlearn_batch(req: UnlearnBatchRequest):
         customers_not_found=not_found,
         shards_retrained=shards_retrained,
     )
+
+@app.get("/customers")
+def get_customers():
+    """
+    Expose customers.csv as JSON.
+    """
+    customers = []
+    for rec in BASE_PERSONAS:
+        customers.append(rec.full_data)
+    return customers
 
 # ------------------------------------------------------------
 # 4️⃣ METRICS ENDPOINT (PER CUSTOMER)

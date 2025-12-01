@@ -54,6 +54,10 @@ class ApiService {
       customer_id: customerId,
     });
   }
+
+  async reset(): Promise<unknown> {
+    return httpClient.post('/reset', {});
+  }
 }
 
 export const apiService = new ApiService();

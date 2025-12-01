@@ -28,7 +28,7 @@ export const RiskScoreGauge: FC<RiskScoreGaugeProps> = ({
                     <Text fontSize="sm" fontWeight="medium" color="gray.600">
                         {label}
                     </Text>
-                    <Text fontSize="sm" fontWeight="bold" color="red.500">
+                    <Text fontSize="sm" fontWeight="bold" color="green.500">
                         {score.toFixed(2)}/{maxScore.toFixed(1)}
                     </Text>
                 </Flex>
@@ -46,14 +46,14 @@ export const RiskScoreGauge: FC<RiskScoreGaugeProps> = ({
                 <Box
                     w={`${percentage}%`}
                     h="100%"
-                    bg="red.500"
+                    bg="green.500"
                     borderRadius="full"
                     transition="width 0.3s ease-in-out"
                 />
             </Box>
 
             <Text fontSize="xs" color="gray.500">
-                {Math.round(percentage)}% Risk Level
+                {Math.round(percentage)}% Confidence Level
             </Text>
         </VStack>
     );

@@ -1,10 +1,24 @@
+import { useState } from 'react';
 import { Box, Heading, Text, Button, VStack } from '@chakra-ui/react';
+import { apiService } from '@/lib/apiService';
 
 export const Settings = () => {
-    const handleReset = () => {
-        // Handle reset action
-        console.log('Reset action triggered');
-        // You could show a confirmation dialog, make an API call, etc.
+    const [isResetting, setIsResetting] = useState(false);
+
+    const handleReset = async () => {
+        if (window.confirm('Are you sure you want to reset all data? This action cannot be undone.')) {
+            try {
+                setIsResetting(true);
+                await apiService.reset();
+                alert('Data has been reset successfully. The page will reload.');
+                window.location.reload();
+            } catch (error) {
+                console.error('Reset failed:', error);
+                alert('Failed to reset data. Please try again.');
+            } finally {
+                setIsResetting(false);
+            }
+        }
     };
 
     return (
@@ -32,6 +46,9 @@ export const Settings = () => {
                         colorScheme="red"
                         size="lg"
                         onClick={handleReset}
+                        loading={isResetting}
+                        loadingText="Resetting..."
+                        disabled={isResetting}
                     >
                         Reset
                     </Button>

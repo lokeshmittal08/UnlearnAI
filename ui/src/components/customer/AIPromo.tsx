@@ -91,7 +91,7 @@ export const AIPromo: FC<AIPromoProps> = ({ customerId }) => {
                                 </Box>
 
                                 <Box>
-                                    <Text fontWeight="bold" mb={1}>Risk Score</Text>
+                                    <Text fontWeight="bold" mb={1}>Confidence Score</Text>
                                     <RiskScoreGauge
                                         score={prediction.score}
                                         showLabel={false}
@@ -145,11 +145,11 @@ export const AIPromo: FC<AIPromoProps> = ({ customerId }) => {
                         </Box>
 
                         {/* Credit Card section - 1 column on large screens */}
-                        {prediction.nbo === "Silver (Baseline)" && (
+                        {(prediction.nbo === "Platinum" || prediction.nbo === "Gold" || prediction.nbo === "Silver") && (
                             <Box gridColumn={{ base: '1', lg: '3' }}>
                                 <Text fontWeight="bold" mb={4}>Recommended Credit Card:</Text>
                                 <CreditCard
-                                    cardType="Silver [Baseline]"
+                                    cardType={prediction.nbo}
                                     customerName={prediction.customer_name}
                                     customerId={prediction.customer_id}
                                 />

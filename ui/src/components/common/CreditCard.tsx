@@ -28,13 +28,32 @@ export const CreditCard: FC<CreditCardProps> = ({
 
     // Color scheme based on card type
     const getCardColors = (type: string) => {
-        if (type.toLowerCase().includes('silver') || type.toLowerCase().includes('baseline')) {
+        const lowerType = type.toLowerCase();
+
+        if (lowerType.includes('platinum')) {
+            return {
+                bg: 'linear-gradient(135deg, #E5E5E5 0%, #C0C0C0 50%, #A8A8A8 100%)',
+                text: '#1a1a1a',
+                accent: '#666666'
+            };
+        }
+
+        if (lowerType.includes('gold')) {
+            return {
+                bg: 'linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF8C00 100%)',
+                text: '#1a1a1a',
+                accent: '#8B4513'
+            };
+        }
+
+        if (lowerType.includes('silver') || lowerType.includes('baseline')) {
             return {
                 bg: 'linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 50%, #808080 100%)',
                 text: 'white',
                 accent: '#E8E8E8'
             };
         }
+
         return {
             bg: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #000000 100%)',
             text: 'white',
