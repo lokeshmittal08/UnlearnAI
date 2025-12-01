@@ -6,6 +6,7 @@ import { customerService } from '@/services';
 import type { PredictResponse } from '@/lib/apiService';
 import { CreditCard } from '@/components/common/CreditCard';
 import { RiskScoreGauge } from '@/components/common/RiskScoreGauge';
+import { NBOProbabilitiesChart } from '@/components/common/NBOProbabilitiesChart';
 
 interface AIPromoProps {
     customerId: string;
@@ -115,12 +116,12 @@ export const AIPromo: FC<AIPromoProps> = ({ customerId }) => {
                                     align="center"
                                     cursor="pointer"
                                     onClick={() => setIsPredictionDetailsExpanded(!isPredictionDetailsExpanded)}
-                                    _hover={{ bg: "gray.50" }}
+                                    _hover={{ bg: "gray.50", color: "gray.900" }}
                                     p={2}
                                     borderRadius="md"
                                     transition="all 0.2s"
                                 >
-                                    <Text fontWeight="bold">Prediction Details</Text>
+                                    <Text fontWeight="bold" color="inherit">Prediction Details</Text>
                                     {isPredictionDetailsExpanded ? (
                                         <ChevronUp size={16} />
                                     ) : (
@@ -129,15 +130,17 @@ export const AIPromo: FC<AIPromoProps> = ({ customerId }) => {
                                 </Flex>
 
                                 {isPredictionDetailsExpanded && (
-                                    <VStack gap={2} align="stretch" mt={3}>
+                                    <VStack gap={4} align="stretch" mt={3}>
                                         <Box>
-                                            <Text fontSize="sm">Segment Probabilities: {prediction.raw_segment_probs.join(', ')}</Text>
+                                            <Text fontSize="sm" fontWeight="medium" mb={2}>Segment Probabilities</Text>
+                                            <Text fontSize="sm" color="gray.600">{prediction.raw_segment_probs.join(', ')}</Text>
                                         </Box>
+
+                                        <NBOProbabilitiesChart probabilities={prediction.raw_nbo_probs} />
+
                                         <Box>
-                                            <Text fontSize="sm">NBO Probabilities: {prediction.raw_nbo_probs.join(', ')}</Text>
-                                        </Box>
-                                        <Box>
-                                            <Text fontSize="sm">Raw Score: {prediction.raw_score_pred.toFixed(3)}</Text>
+                                            <Text fontSize="sm" fontWeight="medium" mb={1}>Raw Score</Text>
+                                            <Text fontSize="sm" color="gray.600">{prediction.raw_score_pred.toFixed(3)}</Text>
                                         </Box>
                                     </VStack>
                                 )}
