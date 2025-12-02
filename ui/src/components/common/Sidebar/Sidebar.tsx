@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Box, Stack, Link as ChakraLink, Text } from '@chakra-ui/react';
+import { Box, Stack, Link as ChakraLink, Text, Image } from '@chakra-ui/react';
 import { BarChart3, Users, Settings } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -21,9 +21,9 @@ export const Sidebar = () => {
             p="4"
         >
             <Box>
-                <Text fontSize="xl" fontWeight="bold" color="fg" mb="6" px="3">
-                    Future Bank
-                </Text>
+                <Link to="/">
+                    <Image src="/UnlearnAI/logo.png" alt="Logo" h="10" mb="6" w="full" cursor="pointer" />
+                </Link>
                 <Box px="3">
                     <Stack direction="column" gap="2">
                         {menuItems.map((item) => {
