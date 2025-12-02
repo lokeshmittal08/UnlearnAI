@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { MainLayout } from '@/components/common/Layout/MainLayout';
 import { Dashboard } from '@/pages/Dashboard/Dashboard';
 import { Customers } from '@/pages/Customers/Customers';
@@ -7,7 +7,7 @@ import { Settings } from '@/pages/Settings/Settings';
 
 function App() {
   return (
-    <Router basename="/UnlearnAI/">
+    <Router>
       <MainLayout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
