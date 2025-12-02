@@ -22,7 +22,7 @@ export const Sidebar = () => {
         >
             <Box>
                 <Link to="/">
-                    <Image src="/logo.png" alt="Logo" h="10" mb="6" w="full" cursor="pointer" />
+                    <Image src="/UnlearnAI/logo.png" alt="Logo" h="10" mb="6" w="full" cursor="pointer" />
                 </Link>
                 <Box px="3">
                     <Stack direction="column" gap="2">
