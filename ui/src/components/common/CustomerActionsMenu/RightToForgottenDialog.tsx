@@ -31,7 +31,7 @@ export const RightToForgottenDialog: FC<RightToForgottenDialogProps> = ({
                 left="50%"
                 transform="translate(-50%, -50%)"
             >
-                <Dialog.Header fontSize="2xl">Invoke Right to Forgotten</Dialog.Header>
+                <Dialog.Header fontSize="2xl">Invoke Data Use Opt-Out</Dialog.Header>
                 <Dialog.Body>
                     <p>The customer has revoked his/her consent for their data to be used for training AI models.</p>
                     <VStack gap={4} mt={4}>

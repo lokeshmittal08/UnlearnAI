@@ -75,7 +75,7 @@ export const CustomerActionsMenu: FC<CustomerActionsMenuProps> = ({
                             >
                                 <HStack gap={2}>
                                     <Hammer size={16} />
-                                    <span>Invoke Right to Forgotten</span>
+                                    <span>Invoke Data Use Opt-Out</span>
                                 </HStack>
                             </Button>
                         </Popover.Body>

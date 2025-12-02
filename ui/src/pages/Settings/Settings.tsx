@@ -10,8 +10,8 @@ export const Settings = () => {
             try {
                 setIsResetting(true);
                 await apiService.reset();
-                alert('Data has been reset successfully. The page will reload.');
-                window.location.reload();
+                alert('Data has been reset successfully.');
+                // window.location.reload();
             } catch (error) {
                 console.error('Reset failed:', error);
                 alert('Failed to reset data. Please try again.');
